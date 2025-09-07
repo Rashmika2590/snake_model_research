@@ -70,6 +70,7 @@ def visualize_and_save(image, contour, output_path):
     # Save the image
     cv2.imwrite(output_path, contour_img)
     print(f"Result saved to {output_path}")
+ feat/active-contour-model-project
 
 
 def get_manual_contour(image):
@@ -134,3 +135,5 @@ def get_manual_contour(image):
 
     # Convert to numpy array and return
     return np.array(points, dtype=np.float32)
+
+ main

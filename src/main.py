@@ -2,24 +2,36 @@ import argparse
 import time
 import os
 import sys
+ feat/active-contour-model-project
 import numpy as np
 import cv2
 from scipy.interpolate import RectBivariateSpline
+
+ main
 
 # Add src to path to allow imports when running from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import src.config as config
+ feat/active-contour-model-project
 from src.utils import preprocess_image, initialize_snake, visualize_and_save, get_manual_contour
 from src.serial_acm import run_serial, _serial_snake_iteration
 from src.parallel_acm import run_parallel, _parallel_snake_iteration
+
+from src.utils import preprocess_image, initialize_snake, visualize_and_save
+from src.serial_acm import run_serial
+from src.parallel_acm import run_parallel
+ main
 
 def main():
     parser = argparse.ArgumentParser(description="Active Contour Model (Snake) for Image Segmentation")
     parser.add_argument('--image', type=str, required=True, help="Path to the input image.")
     parser.add_argument('--mode', type=str, choices=['serial', 'parallel'], default='serial', help="Execution mode.")
+ feat/active-contour-model-project
     parser.add_argument('--init', type=str, choices=['auto', 'manual'], default='auto', help="Contour initialization method.")
     parser.add_argument('--realtime', action='store_true', help="Enable real-time visualization of the snake evolution. NOTE: Does not work in headless environments.")
+
+ main
     parser.add_argument('--output_dir', type=str, default='results', help="Directory to save the output images.")
     args = parser.parse_args()
 
@@ -28,6 +40,7 @@ def main():
     processed_image, original_image = preprocess_image(args.image)
 
     # --- 2. Initialize Snake ---
+ feat/active-contour-model-project
     if args.init == 'manual':
         print("Manual initialization selected. Please draw on the image.")
         # NOTE: This will fail in a headless environment.
@@ -105,6 +118,26 @@ def main():
         final_snake = snake
 
     # --- 4. Visualize and Save Final Result ---
+    print("Initializing snake...")
+    initial_snake = initialize_snake(processed_image.shape, config.N_POINTS)
+
+    # --- 3. Run Active Contour Model ---
+    final_snake = None
+    start_time = time.time()
+
+    if args.mode == 'serial':
+        print("Running Serial Active Contour Model...")
+        final_snake = run_serial(processed_image, initial_snake)
+    elif args.mode == 'parallel':
+        print("Running Parallel Active Contour Model...")
+        final_snake = run_parallel(processed_image, initial_snake)
+
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Execution time ({args.mode}): {execution_time:.4f} seconds")
+
+    # --- 4. Visualize and Save Result ---
+ main
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 

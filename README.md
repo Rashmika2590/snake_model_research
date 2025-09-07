@@ -1,8 +1,11 @@
 # Active Contour Model (Snake) for Image Segmentation
 
+feat/active-contour-model-project
 This project implements and evaluates an Active Contour Model (ACM) for image segmentation. It provides both a standard serial implementation and a highly optimized parallel version using Numba.
 
 The application supports both standard execution and interactive modes for manual contour initialization and real-time visualization of the snake's evolution.
+This project implements and evaluates an Active Contour Model (ACM) for image segmentation. It provides both a standard serial implementation and a highly optimized parallel version using Numba to demonstrate the performance benefits of parallelization.
+main
 
 ## Project Structure
 
@@ -38,6 +41,7 @@ The application supports both standard execution and interactive modes for manua
 
 You can run the Active Contour Model on a single image using `src/main.py`.
 
+feat/active-contour-model-project
 ### Basic Execution
 
 To run the model in batch mode and save the final result:
@@ -76,6 +80,23 @@ You can combine these flags to manually draw a contour and then watch it evolve:
 ```bash
 python3 src/main.py --image data/circle_256.png --init manual --realtime --mode parallel
 ```
+=======
+### Serial Execution
+
+To run the standard serial version:
+```bash
+python3 src/main.py --image data/circle_256.png --mode serial
+```
+
+### Parallel Execution
+
+To run the Numba-optimized parallel version:
+```bash
+python3 src/main.py --image data/circle_256.png --mode parallel
+```
+
+The output images will be saved in the `/results` directory.
+ main
 
 ## Performance Benchmarking
 
@@ -88,6 +109,11 @@ python3 run_benchmarks.py
 This script will:
 1.  Run both serial and parallel implementations on all test images (`256x256`, `512x512`, `1024x1024`).
 2.  Log the execution times to `results/performance_log.csv`.
+feat/active-contour-model-project
 3.  Generate and save comparison plots in the `results` directory.
+3.  Generate and save the following plots in the `results` directory:
+    -   `execution_time_vs_size.png`
+    -   `speedup_vs_size.png`
+main
 
 The final performance analysis can be found in `results/performance_report.md`.

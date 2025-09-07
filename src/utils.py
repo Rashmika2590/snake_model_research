@@ -70,3 +70,70 @@ def visualize_and_save(image, contour, output_path):
     # Save the image
     cv2.imwrite(output_path, contour_img)
     print(f"Result saved to {output_path}")
+ feat/active-contour-model-project
+
+
+def get_manual_contour(image):
+    """
+    Allows the user to draw a contour on the image manually.
+
+    Args:
+        image (numpy.ndarray): The image to draw on.
+
+    Returns:
+        numpy.ndarray: An array of shape (n_points, 2) representing the user-drawn snake.
+    """
+    points = []
+    window_name = "Draw Contour - Press 'Enter' to finish, 'c' to clear"
+
+    def draw_circle(event, x, y, flags, param):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            points.append([x, y])
+
+    cv2.namedWindow(window_name)
+    cv2.setMouseCallback(window_name, draw_circle)
+
+    print("Please draw the initial contour by clicking points on the image.")
+    print("Press 'Enter' to finalize the contour.")
+    print("Press 'c' to clear all points and start over.")
+    print("Press 'q' to quit.")
+
+    temp_img = image.copy()
+
+    while True:
+        # Create a fresh copy for drawing
+        img_draw = temp_img.copy()
+
+        # Draw points and lines
+        if len(points) > 0:
+            for point in points:
+                cv2.circle(img_draw, tuple(point), 3, (0, 0, 255), -1)
+
+            if len(points) > 1:
+                cv2.polylines(img_draw, [np.array(points, dtype=np.int32)], isClosed=False, color=(0, 255, 0), thickness=1)
+
+        cv2.imshow(window_name, img_draw)
+
+        key = cv2.waitKey(20) & 0xFF
+
+        if key == 13:  # Enter key
+            if len(points) < 3:
+                print("Warning: Please select at least 3 points.")
+                continue
+            break
+        elif key == ord('c'): # Clear points
+            points = []
+            print("Points cleared. Please start over.")
+        elif key == ord('q'): # Quit
+            points = []
+            break
+
+    cv2.destroyWindow(window_name)
+
+    if not points:
+        return None
+
+    # Convert to numpy array and return
+    return np.array(points, dtype=np.float32)
+
+ main

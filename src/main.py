@@ -63,7 +63,7 @@ def main():
         setup_path = os.path.join(args.output_dir, f"{os.path.splitext(os.path.basename(args.image))[0]}_parallel_setup.png")
         visualize_parallel_setup(original_image, snake, setup_path)
 
-    # --- 3. Run ACM ---
+    # --- 3. Run Active Contour Model ---
     if args.vis_serial:
         # Matplotlib serial visualization
         print("Running Matplotlib real-time serial visualization...")
@@ -97,13 +97,12 @@ def main():
     elif args.realtime:
         # OpenCV real-time visualization
         print("Running OpenCV real-time visualization. Press 'q' to stop.")
+        h, w = processed_image.shape
         grad_x = cv2.Sobel(processed_image, cv2.CV_64F, 1, 0, ksize=5)
         grad_y = cv2.Sobel(processed_image, cv2.CV_64F, 0, 1, ksize=5)
         image_energy = -cv2.magnitude(grad_x, grad_y)
         cv2.normalize(image_energy, image_energy, 0, 1, cv2.NORM_MINMAX)
-        h, w = processed_image.shape
-        x_coords, y_coords = np.arange(w), np.arange(h)
-        energy_interpolator = RectBivariateSpline(y_coords, x_coords, image_energy, kx=2, ky=2, s=0)
+        energy_interpolator = RectBivariateSpline(np.arange(h), np.arange(w), image_energy, kx=2, ky=2, s=0)
         search_window = np.array([(i, j) for i in range(-config.N_SEARCH, config.N_SEARCH+1)
                                   for j in range(-config.N_SEARCH, config.N_SEARCH+1)], dtype=np.float32)
         window_name = "Active Contour Evolution (OpenCV)"
@@ -113,10 +112,8 @@ def main():
                 snake = _serial_snake_iteration(snake, energy_interpolator, search_window)
             else:
                 if i == 0:
-                    _ = _parallel_snake_iteration(snake, image_energy, search_window,
-                                                  config.ALPHA, config.BETA, config.W_EDGE)
-                snake, _ = _parallel_snake_iteration(snake, image_energy, search_window,
-                                                     config.ALPHA, config.BETA, config.W_EDGE)
+                    _ = _parallel_snake_iteration(snake, image_energy, search_window, config.ALPHA, config.BETA, config.W_EDGE)
+                snake, _ = _parallel_snake_iteration(snake, image_energy, search_window, config.ALPHA, config.BETA, config.W_EDGE)
             vis_image = original_image.copy()
             points = snake.astype(np.int32).reshape((-1,1,2))
             cv2.polylines(vis_image, [points], isClosed=True, color=(0,255,0), thickness=2)

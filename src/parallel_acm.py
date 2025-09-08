@@ -19,7 +19,6 @@ def bilinear_interpolate(image, x, y):
     if x0 < 0 or x1 >= w or y0 < 0 or y1 >= h:
         return 0.0
 
-    # Get the values of the four corners
     q11 = image[y0, x0]
     q21 = image[y0, x1]
     q12 = image[y1, x0]

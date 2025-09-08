@@ -15,9 +15,9 @@ def bilinear_interpolate(image, x, y):
     x1 = x0 + 1
     y1 = y0 + 1
 
-    # Check if the point is inside the image bounds
+    # Return 0 for points outside the image
     if x0 < 0 or x1 >= w or y0 < 0 or y1 >= h:
-        return 0.0  # Return 0 for points outside the image
+        return 0.0
 
     # Get the values of the four corners
     q11 = image[y0, x0]
@@ -25,13 +25,13 @@ def bilinear_interpolate(image, x, y):
     q12 = image[y1, x0]
     q22 = image[y1, x1]
 
-    # Calculate the interpolation weights
+    # Calculate interpolation weights
     wa = (x1 - x) * (y1 - y)
     wb = (x - x0) * (y1 - y)
     wc = (x1 - x) * (y - y0)
     wd = (x - x0) * (y - y0)
 
-    # Return the interpolated value
+    # Return interpolated value
     return wa * q11 + wb * q21 + wc * q12 + wd * q22
 
 
@@ -43,16 +43,16 @@ def _parallel_snake_iteration(snake, image_energy, search_window, alpha, beta, w
     n_points = len(snake)
     new_snake = np.zeros_like(snake)
 
-    # Manually roll the snake array to avoid Numba compatibility issues with np.roll's axis argument
+    # Manually roll the snake array
     rolled_snake = np.empty_like(snake)
     rolled_snake[:-1] = snake[1:]
     rolled_snake[-1] = snake[0]
-    # Manual norm calculation because Numba doesn't support axis argument in np.linalg.norm
+
+    # Compute distances for continuity energy
     diffs = rolled_snake - snake
     norms = np.sqrt(np.sum(diffs**2, axis=1))
     avg_dist = np.mean(norms)
 
-    # Use prange for parallel execution
     for j in numba.prange(n_points):
         current_point = snake[j]
         prev_point = snake[(j - 1 + n_points) % n_points]
@@ -64,14 +64,13 @@ def _parallel_snake_iteration(snake, image_energy, search_window, alpha, beta, w
         for move in search_window:
             candidate_pos = current_point + move
 
-            # Internal Energy
+            # Internal energy
             e_continuity = np.abs(avg_dist - np.linalg.norm(candidate_pos - prev_point))**2
             e_curvature = np.linalg.norm(prev_point - 2 * candidate_pos + next_point)**2
             e_internal = alpha * e_continuity + beta * e_curvature
 
-            # External Energy (interpolated)
+            # External energy (interpolated)
             e_image = bilinear_interpolate(image_energy, candidate_pos[0], candidate_pos[1])
-
             total_energy = e_internal + w_edge * e_image
 
             if total_energy < min_energy:
@@ -86,22 +85,23 @@ def _parallel_snake_iteration(snake, image_energy, search_window, alpha, beta, w
 def run_parallel(image, initial_snake):
     """
     Runs the parallel active contour model algorithm.
+    Returns the final snake.
     """
     snake = initial_snake.copy()
 
-    # Pre-computation (done in Python/NumPy)
+    # Compute image energy
     grad_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
     grad_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
     image_energy = -cv2.magnitude(grad_x, grad_y)
     cv2.normalize(image_energy, image_energy, 0, 1, cv2.NORM_MINMAX)
 
+    # Define search window
     search_window = np.array([
         (i, j) for i in range(-config.N_SEARCH, config.N_SEARCH + 1)
         for j in range(-config.N_SEARCH, config.N_SEARCH + 1)
     ], dtype=np.float32)
 
-    # JIT compilation happens on the first call
-    # The main loop calls the Numba-jitted function
+    # Iteratively update snake
     for i in range(config.N_ITERATIONS):
         snake = _parallel_snake_iteration(
             snake,
